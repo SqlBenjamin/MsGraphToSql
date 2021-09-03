@@ -29,6 +29,8 @@ BEGIN TRANSACTION;
 DECLARE  @MSI_AppId nvarchar(36) = N'00000000-0000-0000-0000-000000000000'
         ,@SqlServerName nvarchar(128) = @@SERVERNAME --N'Server Name here if not the local box'
         ,@ScriptLocation nvarchar(2000) = N'G:\IntuneSync\IntuneSyncToSql.ps1' -- The location of the "IntuneSyncToSql" PS file on the local box
+        ,@AuthUrl nvarchar(2000) = NULL -- The "Authority" to use for Graph Connections: Default = N'https://login.microsoftonline.com/common/'. Example of different Auth: N'https://login.windows.net/common'.
+        ,@BaseUrl nvarchar(2000) = NULL -- The "Audience" or base portion of the URL to use for Graph: Default = N'https://graph.microsoft.com/'. Example of different Audience: N'https://canary.graph.microsoft.com'.
         ,@DBMail_ProfileName nvarchar(1000) = N'DBA Email' -- A valid db mail profile name
         ,@DBMail_Recipients nvarchar(1000) = N'user@contoso.com;user2@contoso.com' -- semi-colon separated list of email addresses
         ,@DBMail_CopyRecipients nvarchar(1000) = N''; -- semi-colon separated list of email addresses if desired
@@ -42,8 +44,10 @@ DECLARE  @UrlsToSync nvarchar(max) = N'SqlFilter:JobName = N'''+@JobName+N''' AN
         ,@AlertSprocCommand nvarchar(max)
         ,@FailureEmailCommand nvarchar(max)
         ,@StartJobCommand nvarchar(max)
-        ,@UseDbMailItems bit;
-SELECT @PSCommand = N'cd "%SystemRoot%\system32\WindowsPowerShell\v1.0" && powershell.exe -Command "& '''+@ScriptLocation+N''' -SqlServerName '+@SqlServerName+N' -UrlsToSync '''+REPLACE(@UrlsToSync,N'''',N'''''')+N''' -GraphUser '''+@MSI_AppId+N''' -SqlUser ''me'' -GraphUserIsMSI -SqlLoggingTableJobName '''+@JobName+N''' -WriteBatchSize 400000 -BulkCopyTimeout 600;"
+        ,@UseDbMailItems bit
+        ,@AudienceStuff nvarchar(max);
+SELECT @AudienceStuff = CASE WHEN @AuthUrl IS NOT NULL THEN N' -AuthUrl '''+@AuthUrl+N'''' ELSE N'' END + CASE WHEN @BaseUrl IS NOT NULL THEN N' -BaseURL '''+@BaseUrl+N'''' ELSE N'' END;
+SELECT @PSCommand = N'cd "%SystemRoot%\system32\WindowsPowerShell\v1.0" && powershell.exe -Command "& '''+@ScriptLocation+N''' -SqlServerName '+@SqlServerName+N' -SqlDatabaseName ''Intune'''+@AudienceStuff+N' -UrlsToSync '''+REPLACE(@UrlsToSync,N'''',N'''''')+N''' -GraphUser '''+@MSI_AppId+N''' -SqlUser ''me'' -GraphUserIsMSI -SqlLoggingTableJobName '''+@JobName+N''' -WriteBatchSize 400000 -BulkCopyTimeout 600 -BulkCopyBatchSize 50000;"
 ';
 -- See if the DB Mail Profile exists:
 SELECT @UseDbMailItems = 1

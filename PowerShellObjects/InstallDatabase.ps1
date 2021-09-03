@@ -354,7 +354,7 @@ function Invoke-SqlScript {
                 }
                 elseif ((Split-Path -Path $SqlScriptFilePath) -like '*\DatabaseFiles\Jobs*') #(Split-Path -Path (Split-Path -Path $SqlScriptFilePath) -Leaf) -eq 'Jobs'
                 {
-                    $SqlScriptFile = $SqlScriptFile.Replace("       ,@database_name = N'Intune'","       ,@database_name = N'$NewScriptDb'");
+                    $SqlScriptFile = $SqlScriptFile.Replace("       ,@database_name = N'Intune'","       ,@database_name = N'$NewScriptDb'").Replace("-SqlDatabaseName ''Intune''","-SqlDatabaseName ''$NewScriptDb''");
                 }
                 else
                 {
